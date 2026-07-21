@@ -8,6 +8,16 @@ async function callGroq(prompt: string): Promise<string> {
   if (!apiKey) {
     throw new Error("GROQ_API_KEY is not set");
   }
+  // System message keeps the model in "plain reasoning" mode: no email format,
+  // no greetings/signatures, no [bracketed] placeholders. It writes the
+  // explanation only; the decision is always made in code.
+  const system =
+    "You are the Finance department agent in an automated budget-approval system. " +
+    "You write only the short, human-readable justification for a decision that has " +
+    "already been made by a deterministic policy engine. Reply with exactly two " +
+    "sentences of plain prose in the first person. Never write an email, subject line, " +
+    "greeting, or signature. Never use bracketed placeholders such as [Name] or " +
+    "[Your Name]. Do not address anyone; just state the reasoning.";
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -17,7 +27,11 @@ async function callGroq(prompt: string): Promise<string> {
     body: JSON.stringify({
       model: "llama-3.1-8b-instant",
       max_tokens: 120,
-      messages: [{ role: "user", content: prompt }],
+      temperature: 0.4,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
     }),
   });
   if (!response.ok) {
@@ -55,11 +69,11 @@ export const runFinanceAgent = action({
     let reasoning: string;
     try {
       reasoning = await callGroq(
-        "You are the Finance agent of a company. A " + req.campaign +
-        " campaign requested Rs " + req.amount + ". The policy limit is Rs " +
-        policy.limit + ". It is " + (withinPolicy ? "within" : "over") +
-        " limit. Write two sentences of reasoning for " +
-        (withinPolicy ? "approving" : "rejecting") + " it. Be concise and professional."
+        "A " + req.campaign + " campaign requested Rs " + req.amount +
+        ". The policy limit is Rs " + policy.limit + ", so this request is " +
+        (withinPolicy ? "within" : "over") + " the limit and has therefore been " +
+        (withinPolicy ? "approved" : "rejected") +
+        " by the policy engine. Write exactly two sentences explaining this outcome."
       );
     } catch (e) {
       // Fallback so the workflow NEVER stalls on model latency (constraint 6).
