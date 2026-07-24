@@ -36,6 +36,28 @@ The hackathon brief names three requirements. Quorum satisfies each one:
 2. **Humans stay in the loop for real decisions.** An over-limit request pauses in an `escalated` state and does not advance until a human approves, rejects, or overrides it.
 3. **Every action is traceable.** For any action, a human can open the audit log and see what happened, which agent did it, and the reasoning behind it, without asking the agents.
 
+## Depth, not breadth
+
+The brief is explicit that breadth earns nothing, and warns against building many shallow department agents, a chatbot with a nice UI, or a demo that only works because a human secretly clicks things. We took that seriously and went deep on one workflow. Here is where the depth actually is.
+
+- **A real, deterministic policy engine, not a prompt.** The approve or reject decision is `amount <= limit` in code. It is not an LLM guess, so the disagreement fires on every single run and is identical in the dry run and the live run. This is the difference between a demo that might work and a system that always does.
+
+- **Two genuinely different paths, and the line between them is designed.** Within-policy requests are auto-approved with no human ever involved. Only policy exceptions escalate to the board. Building the auto-approve branch even though the headline demo walks the escalation path is the point: it proves the system acts on its own where it is safe and stops for a human where it is not, on purpose.
+
+- **The human gate is a transactional state transition, not a button.** An escalated request sits in that state indefinitely and nothing advances it except an external human decision recorded as a Convex mutation. The gate is satisfied by the backend, not by the UI.
+
+- **A complete, queryable reasoning trail.** Every actor (marketing_agent, finance_agent, human, system) writes an audit row carrying reasoning, not just a status change. For any single request you can pull its full decision timeline in order: submitted, evaluated and why, escalated and why, human decision and the note, side effect fired. That directly answers the brief's own question about where a new team member looks to understand last week's decisions.
+
+- **Arbitrary input, not a canned amount.** The console accepts any campaign name and any amount, so a judge can type their own number and watch the same policy engine react live. Under the limit auto-approves, over the limit escalates. Nothing is hardcoded to make the demo work.
+
+- **Honest, visible use of the LLM.** The reasoning prose in every evaluation is generated live by Groq and labelled as such in the interface. The model writes language; it never makes the decision. This separation is shown, not just claimed.
+
+- **Built to survive a bad network.** Groq down, Slack down, or flaky venue wifi, and the workflow still reaches its end state through wrapped calls and templated fallbacks. Reliability is a feature here, not an afterthought.
+
+- **Aggregate oversight.** A live overview counts total requests, how many are awaiting the board, how many completed, and how many were rejected, so a human can see the health of the system at a glance, which is how you notice when an agent starts making bad calls.
+
+None of this is a second or third agent, a login system, or an unrelated workflow. It is the same one workflow, made real and made deep.
+
 ## The decision is code, the reasoning is the LLM
 
 This is the most important design decision in the project.
