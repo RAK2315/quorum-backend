@@ -32,7 +32,8 @@ export const humanDecide = mutation({
 
     if (a.decision === "override_approve") {
       await ctx.db.patch(a.requestId, { status: "human_approved" });
-      await ctx.scheduler.runAfter(0, api.external.fireSlack, {
+      // Brief pace before Slack so "Board approved" shows before "Slack sent".
+      await ctx.scheduler.runAfter(1500, api.external.fireSlack, {
         requestId: a.requestId,
       });
     } else {

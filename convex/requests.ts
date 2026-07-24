@@ -41,7 +41,10 @@ export const submit = mutation({
       action: "Submitted budget request of Rs " + args.amount + " for " + args.campaign,
       reasoning: args.justification,
     });
-    await ctx.scheduler.runAfter(0, api.agents.runFinanceAgent, { requestId });
+    // Small deliberate delay so the demo reads as distinct beats: the request
+    // appears first, then the Finance agent "reviews" and responds a moment
+    // later. The work is real; this only paces it for a live audience.
+    await ctx.scheduler.runAfter(1800, api.agents.runFinanceAgent, { requestId });
     return requestId;
   },
 });

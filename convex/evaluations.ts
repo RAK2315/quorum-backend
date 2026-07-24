@@ -29,7 +29,9 @@ export const record = mutation({
     if (a.withinPolicy) {
       // Autonomy where it is safe: no human ever sees this.
       await ctx.db.patch(a.requestId, { status: "auto_approved" });
-      await ctx.scheduler.runAfter(0, api.external.fireSlack, {
+      // Brief pace before the Slack side effect so the auto-approval is
+      // visible before "Done · Slack sent" appears (demo readability).
+      await ctx.scheduler.runAfter(1500, api.external.fireSlack, {
         requestId: a.requestId,
       });
     } else {
