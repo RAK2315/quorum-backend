@@ -27,6 +27,14 @@ export const humanDecide = mutation({
     note: v.string(),
   },
   handler: async (ctx, a) => {
+    // Idempotency guard: the gate only acts on an escalated request. A double
+    // click (common on venue wifi) reads the already-transitioned status and
+    // returns, so we never write two approvals, two Slack messages, or two
+    // action_fired patches. Convex mutations are serializable, so this holds.
+    const req = await ctx.db.get(a.requestId);
+    if (!req || req.status !== "escalated") {
+      return;
+    }
     await ctx.db.insert("approvals", {
       requestId: a.requestId,
       humanDecision: a.decision,

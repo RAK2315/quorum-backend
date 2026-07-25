@@ -36,6 +36,16 @@ export const submit = mutation({
       justification: args.justification,
       status: "pending_finance",
     });
+    // Write the submission audit row transactionally, in the same mutation as
+    // the request. This guarantees every request always has a trail even if the
+    // scheduled Marketing agent action later fails (constraint 6), and lights up
+    // the audit feed instantly instead of after the Groq round-trip.
+    await ctx.db.insert("auditLog", {
+      requestId,
+      actor: "marketing_agent",
+      action: "Submitted budget request of Rs " + args.amount + " for " + args.campaign,
+      reasoning: args.justification,
+    });
     // Short delay so the request card appears first, then the Marketing agent
     // "writes up" its pitch a moment later (demo readability).
     await ctx.scheduler.runAfter(600, api.agents.runMarketingAgent, { requestId });
@@ -57,7 +67,7 @@ export const recordMarketingPitch = mutation({
     await ctx.db.insert("auditLog", {
       requestId,
       actor: "marketing_agent",
-      action: "Submitted budget request of Rs " + req.amount + " for " + req.campaign,
+      action: "Drafted campaign justification",
       reasoning: pitch,
     });
     // Pace before Finance so the two agents read as distinct beats.
