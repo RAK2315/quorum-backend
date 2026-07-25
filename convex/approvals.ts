@@ -1,6 +1,18 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+
+// The board's decision for a request, if any. Used to enrich the Slack message.
+export const forRequest = query({
+  args: { requestId: v.id("requests") },
+  handler: async (ctx, { requestId }) => {
+    return await ctx.db
+      .query("approvals")
+      .withIndex("by_request", (q) => q.eq("requestId", requestId))
+      .order("desc")
+      .first();
+  },
+});
 
 // THE HUMAN GATE. An escalated request sits still forever until this runs;
 // nothing else advances it (pillar 2). The frontend button, whenever it
