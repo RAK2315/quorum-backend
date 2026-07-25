@@ -126,7 +126,7 @@ Remove Convex and you do not just lose a database. You lose the gate, the tracea
 2. **Finance agent evaluates it against policy.** Code compares the amount to the limit. Groq writes the reasoning prose, with a templated fallback if it fails.
 3. **The state machine splits.** Within policy goes to `auto_approved` and fires Slack with no human involved. Over policy goes to `escalated` and waits.
 4. **A human overrides.** The board approves the exception with a note, or upholds the rejection.
-5. **Convex fires a real Slack message** through the scheduler.
+5. **Convex fires a real Slack message** through the scheduler. The message summarises the whole decision so the channel is a useful record on its own: the path taken (auto-approved or board exception), the amount versus the limit, and, for an exception, the human board's note.
 6. **The whole chain is readable** in the live audit feed, with every actor and every reason.
 
 There is a small deliberate pacing delay between steps so the workflow reads as distinct beats during a live demo. The work is real; only the timing is spaced.
