@@ -62,7 +62,7 @@ None of this is a second or third agent, a login system, or an unrelated workflo
 
 This is the most important design decision in the project.
 
-The policy check is `amount <= limit` in plain code. It is deterministic, so the disagreement fires on every run and never depends on a model behaving correctly under pressure. The LLM (Groq, `llama-3.1-8b-instant`) writes **only** the human-readable reasoning paragraph that goes into the audit log. If the Groq call fails, a templated fallback string is used and the workflow still completes.
+Both agents use the LLM (Groq, `llama-3.1-8b-instant`) for **language**: the Marketing agent writes its own persuasive pitch for the campaign, and the Finance agent writes the reasoning for its evaluation. Neither uses the LLM to **decide**. The policy check is `amount <= limit` in plain code. It is deterministic, so the disagreement fires on every run and never depends on a model behaving correctly under pressure. If any Groq call fails, a templated fallback string is used and the workflow still completes.
 
 This is not a shortcut. Real systems put policy in code and use models for language. The decision is never made by the model.
 
@@ -122,7 +122,7 @@ Remove Convex and you do not just lose a database. You lose the gate, the tracea
 
 ## The workflow, end to end
 
-1. **Marketing agent submits a budget request.** Inserted with status `pending_finance`, an audit row is written, and the Finance agent is scheduled.
+1. **Marketing agent submits a budget request.** It uses the LLM to write its own persuasive pitch for the campaign, then hands the request to the Finance agent. No human moves the data between them.
 2. **Finance agent evaluates it against policy.** Code compares the amount to the limit. Groq writes the reasoning prose, with a templated fallback if it fails.
 3. **The state machine splits.** Within policy goes to `auto_approved` and fires Slack with no human involved. Over policy goes to `escalated` and waits.
 4. **A human overrides.** The board approves the exception with a note, or upholds the rejection.
@@ -169,8 +169,8 @@ convex/
   schema.ts        tables and the status state machine
   seed.ts          policy row (idempotent) plus a reset helper for a clean demo
   policies.ts      policy lookup
-  requests.ts      submit plus queries; schedules the Finance agent
-  agents.ts        the Finance agent action (Groq reasoning, decision in code)
+  requests.ts      submit plus queries; schedules the Marketing agent
+  agents.ts        the Marketing and Finance agent actions (Groq language, decision in code)
   evaluations.ts   the state machine (auto-approve vs escalate)
   approvals.ts     the human gate
   external.ts      the real Slack side effect (fireSlack plus markFired)
